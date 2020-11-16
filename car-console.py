@@ -77,7 +77,7 @@ if __name__ == '__main__':
                         help='Increase verbosity')
     args = parser.parse_args()
     if args.verbose > 0:
-        logger.setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
