@@ -340,14 +340,11 @@ class Radio(AudioCarComponent):
         self.player_process = self.run(command, wait=False)
 
     def stop_player(self):
-        ret = True
         if self.player_process is not None:
             process = self.player_process
             self.player_process = None
             process.kill()
             process.communicate()
-
-        return False
 
     def start(self):
         self.stop()
@@ -383,8 +380,8 @@ class Radio(AudioCarComponent):
             if key is not None:
                 try:
                     self.player_process.stdin.write(key)
-                except Exception as e:
-                    pass
+                except Exception:
+                    logger.exception("Failed to write %s to mplayer" % (key))
 
         else:
             if self.player_process is not None:
@@ -396,7 +393,6 @@ class AudioOutput(object):
         self.loop_name = 'silence'
         self.sounds = {}
 
-        SIZE = 4096
         pygame.mixer.init(44100, -16, 2, 4096)
 
         self.load_sounds()
