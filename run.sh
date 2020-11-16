@@ -1,1 +1,1 @@
-exec "$(dirname "$0")"/car-console.py
+exec "$(dirname "$0")"/car-console.py "$@"
