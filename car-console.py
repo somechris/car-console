@@ -9,8 +9,6 @@ with contextlib.redirect_stdout(None):
     import pygame
 
 import time
-import select
-import sys
 import subprocess
 import gpiozero
 import logging
