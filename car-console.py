@@ -38,12 +38,14 @@ IO_GEAR_4_BUTTON = gpiozero.Button("GPIO13")
 IO_GEAR_5_BUTTON = gpiozero.Button("GPIO19")
 IO_GEAR_R_BUTTON = gpiozero.Button("GPIO26")
 
-USB_DEVICE = '/dev/disk/by-path/platform-3f980000.usb-usb-0:1.4:1.0-scsi-0:0:0:0-part1'
+USB_DEVICE = ('/dev/disk/by-path/'
+              'platform-3f980000.usb-usb-0:1.4:1.0-scsi-0:0:0:0-part1')
 MOUNT_DIR = 'media'
 
 LOOPS_PER_SECOND = 50
 
-LOG_FORMAT = '%(asctime)s.%(msecs)03d %(levelname)-5s [%(threadName)s] %(filename)s:%(lineno)d - %(message)s'
+LOG_FORMAT = ('%(asctime)s.%(msecs)03d %(levelname)-5s [%(threadName)s] '
+              '%(filename)s:%(lineno)d - %(message)s')
 LOG_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 logging.basicConfig(format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
@@ -97,11 +99,13 @@ class TurnSignal(AudioCarComponent):
         super(TurnSignal, self).step(time)
         phase = (int(time * 2) % 2) == 0
 
-        pressed = self.signal_button.is_pressed or self.emergency_button.is_pressed
+        pressed = self.signal_button.is_pressed \
+            or self.emergency_button.is_pressed
 
         self.led.value = phase and pressed
 
-        self.audio_once = 'turn-signal' if (self.last_phase != phase) and pressed else None
+        self.audio_once = 'turn-signal' if (self.last_phase != phase) \
+            and pressed else None
 
         self.last_phase = phase
 
@@ -124,7 +128,8 @@ class EmergencyLight(AudioCarComponent):
 
 
 class Engine(AudioCarComponent):
-    def __init__(self, starter_button, led, gear_1_button, gear_2_button, gear_3_button, gear_4_button, gear_5_button, gear_R_button):
+    def __init__(self, starter_button, led, gear_1_button, gear_2_button,
+                 gear_3_button, gear_4_button, gear_5_button, gear_R_button):
         super(Engine, self).__init__()
         self.starter_button = starter_button
         self.led = led
@@ -176,14 +181,15 @@ class Engine(AudioCarComponent):
             if self.last_gear != gear and gear != 'N':
                 # There was a change to a proper gear
                 if self.to_neutral_time < time - 4:
-                    # It's long ago that we had a proper gear, so we need to start afresh
+                    # It's long ago that we had a proper gear, so we need to
+                    # start afresh.
                     if gear in ['1', 'R']:
                         self.audio_once = 'engine-shift-up'
                     else:
                         self.stop(time, grind=True)
                 else:
-                    # We saw a proper gear recently. So we need to check if the change is sane
-
+                    # We saw a proper gear recently. So we need to check if
+                    # the change is sane
                     if ord(gear) == ord(self.last_proper_gear) + 1:
                         # Shift one gear up
                         self.audio_once = 'engine-shift-up'
@@ -191,7 +197,8 @@ class Engine(AudioCarComponent):
                         # Shift one gear down
                         self.audio_once = 'engine-shift-down'
                     elif gear != self.last_proper_gear:
-                        # Neither one up or down and also not to same gear, so we motor stops
+                        # Neither one up or down and also not to same gear, so
+                        # we motor stops
                         self.stop(time, grind=True)
 
             if self.starter_button.is_pressed and self.start_time < time - 2:
@@ -233,7 +240,8 @@ class Battery(CarComponent):
 
 
 class TwoStateButton(object):
-    def __init__(self, button, value_short=None, value_long=None, long_interval=0.4):
+    def __init__(self, button, value_short=None, value_long=None,
+                 long_interval=0.4):
         self.button = button
         self.value_short = value_short
         self.value_long = value_long
@@ -256,7 +264,8 @@ class TwoStateButton(object):
                 ret = self.value_long
                 self.last_send_time = time
 
-        elif self.last_pressed and self.press_start_time >= time - self.long_interval:
+        elif self.last_pressed \
+                and self.press_start_time >= time - self.long_interval:
             ret = self.value_short
 
         self.last_pressed = self.button.is_pressed
@@ -267,9 +276,10 @@ class TwoStateButton(object):
 class RadioKeyboard(object):
     def __init__(self, back_button, play_button, forward_button):
         super(RadioKeyboard, self).__init__()
-        self.back_button = TwoStateButton(back_button, '<', '\033[D')
-        self.play_button = TwoStateButton(play_button, ' ', 'toggle-silencing', 2)
-        self.forward_button = TwoStateButton(forward_button, '>', '\033[C')
+        TSB = TwoStateButton
+        self.back_button = TSB(back_button, '<', '\033[D')
+        self.play_button = TSB(play_button, ' ', 'toggle-silencing', 2)
+        self.forward_button = TSB(forward_button, '>', '\033[C')
 
     def get_key(self, time):
         key = self.play_button.get_value(time)
@@ -281,7 +291,8 @@ class RadioKeyboard(object):
 
 
 class Radio(AudioCarComponent):
-    def __init__(self, device, mount_dir, back_button, play_button, forward_button):
+    def __init__(self, device, mount_dir, back_button, play_button,
+                 forward_button):
         super(Radio, self).__init__()
         self.device = device
         self.mount_dir = mount_dir
@@ -297,7 +308,8 @@ class Radio(AudioCarComponent):
     def run(self, command, sudo=False, wait=True):
         if sudo:
             command = ['sudo'] + command
-        logger.debug('Executing in %s: %s' % ('foreground' if wait else 'background', str(command)))
+        environment = 'foreground' if wait else 'background'
+        logger.debug('Executing in %s: %s' % (environment, str(command)))
         if wait:
             try:
                 completed = subprocess.run(command, timeout=1)
@@ -433,11 +445,17 @@ class Car(object):
 
         self.components = [
             Battery(IO_ENGINE_RUNNABLE_LED),
-            Engine(IO_STARTER_BUTTON, IO_ENGINE_RUNNING_LED, IO_GEAR_1_BUTTON, IO_GEAR_2_BUTTON, IO_GEAR_3_BUTTON, IO_GEAR_4_BUTTON, IO_GEAR_5_BUTTON, IO_GEAR_R_BUTTON),
-            TurnSignal(IO_TURN_SIGNAL_LEFT_BUTTON, IO_EMERGENCY_BUTTON, IO_TURN_SIGNAL_LEFT_LED),
-            TurnSignal(IO_TURN_SIGNAL_RIGHT_BUTTON, IO_EMERGENCY_BUTTON, IO_TURN_SIGNAL_RIGHT_LED),
-            EmergencyLight(IO_EMERGENCY_LIGHT_BUTTON, IO_EMERGENCY_LIGHT_RELAIS),
-            Radio(USB_DEVICE, MOUNT_DIR, IO_MUSIC_BACK_BUTTON, IO_MUSIC_PLAY_BUTTON, IO_MUSIC_FORWARD_BUTTON),
+            Engine(IO_STARTER_BUTTON, IO_ENGINE_RUNNING_LED, IO_GEAR_1_BUTTON,
+                   IO_GEAR_2_BUTTON, IO_GEAR_3_BUTTON, IO_GEAR_4_BUTTON,
+                   IO_GEAR_5_BUTTON, IO_GEAR_R_BUTTON),
+            TurnSignal(IO_TURN_SIGNAL_LEFT_BUTTON, IO_EMERGENCY_BUTTON,
+                       IO_TURN_SIGNAL_LEFT_LED),
+            TurnSignal(IO_TURN_SIGNAL_RIGHT_BUTTON, IO_EMERGENCY_BUTTON,
+                       IO_TURN_SIGNAL_RIGHT_LED),
+            EmergencyLight(IO_EMERGENCY_LIGHT_BUTTON,
+                           IO_EMERGENCY_LIGHT_RELAIS),
+            Radio(USB_DEVICE, MOUNT_DIR, IO_MUSIC_BACK_BUTTON,
+                  IO_MUSIC_PLAY_BUTTON, IO_MUSIC_FORWARD_BUTTON),
             Horn(IO_HORN_BUTTON),
             ]
         logger.debug('Car initialized')
