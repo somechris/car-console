@@ -38,16 +38,17 @@ IO_GEAR_4_BUTTON = gpiozero.Button("GPIO13")
 IO_GEAR_5_BUTTON = gpiozero.Button("GPIO19")
 IO_GEAR_R_BUTTON = gpiozero.Button("GPIO26")
 
-USB_DEVICE='/dev/disk/by-path/platform-3f980000.usb-usb-0:1.4:1.0-scsi-0:0:0:0-part1'
-MOUNT_DIR='media'
+USB_DEVICE = '/dev/disk/by-path/platform-3f980000.usb-usb-0:1.4:1.0-scsi-0:0:0:0-part1'
+MOUNT_DIR = 'media'
 
-LOOPS_PER_SECOND=50
+LOOPS_PER_SECOND = 50
 
-LOG_FORMAT='%(asctime)s.%(msecs)03d %(levelname)-5s [%(threadName)s] %(filename)s:%(lineno)d - %(message)s'
-LOG_DATE_FORMAT='%Y-%m-%dT%H:%M:%S'
+LOG_FORMAT = '%(asctime)s.%(msecs)03d %(levelname)-5s [%(threadName)s] %(filename)s:%(lineno)d - %(message)s'
+LOG_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 logging.basicConfig(format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 logger = logging.getLogger(__name__)
+
 
 class CarComponent(object):
     def step(self, time):
@@ -230,6 +231,7 @@ class Battery(CarComponent):
         super(Battery, self).step(time)
         self.led.value = True
 
+
 class TwoStateButton(object):
     def __init__(self, button, value_short=None, value_long=None, long_interval=0.4):
         self.button = button
@@ -241,7 +243,6 @@ class TwoStateButton(object):
         self.last_pressed = False
         self.press_start_time = 0
         self.last_send_time = 0
-
 
     def get_value(self, time):
         ret = None
@@ -277,6 +278,7 @@ class RadioKeyboard(object):
         if key is None:
             key = self.forward_button.get_value(time)
         return key
+
 
 class Radio(AudioCarComponent):
     def __init__(self, device, mount_dir, back_button, play_button, forward_button):
@@ -320,7 +322,7 @@ class Radio(AudioCarComponent):
 
     def unmount(self):
         command = ['/bin/umount', '-f', self.mount_dir]
-        return self.run(command = command, sudo=True)
+        return self.run(command=command, sudo=True)
 
     def get_media_files(self):
         media_files = []
@@ -394,7 +396,7 @@ class AudioOutput(object):
         self.loop_name = 'silence'
         self.sounds = {}
 
-        SIZE=4096
+        SIZE = 4096
         pygame.mixer.init(44100, -16, 2, 4096)
 
         self.load_sounds()
@@ -405,7 +407,7 @@ class AudioOutput(object):
     def load_sounds(self):
         samples_dir = self.get_sound_directory('samples')
         for file_relative in os.listdir(samples_dir):
-            name = file_relative.rsplit('.',2)[0]
+            name = file_relative.rsplit('.', 2)[0]
             file_absolute = os.path.join(samples_dir, file_relative)
             self.sounds[name] = pygame.mixer.Sound(file_absolute)
             logger.debug('Loading sound \'%s\' ...' % (file_absolute))
